@@ -17,20 +17,35 @@
 # limitations under the License.
 #
 
-include_recipe "apt"
-include_recipe "java"
-
 platform = "debian" if platform?("debian")
 platform = "ubuntu" if platform?("ubuntu")
 codename = node[:lsb][:codename]
 
-apt_repository "cloudera" do
-  uri "http://archive.cloudera.com/cdh4/#{platform}/#{codename}/amd64/cdh"
-  arch "amd64"
-  distribution "#{codename}-cdh4"
-  components ["contrib"]
-  key "http://archive.cloudera.com/cdh4/#{platform}/#{codename}/amd64/cdh/archive.key"
+uri = "http://archive.cloudera.com/cdh4/#{platform}/#{codename}/amd64/cdh"
+file "/etc/apt/sources.list.d/cloudera.list" do
+  owner "root"
+  group "root"
+  mode 00644
+  content "deb [arch=amd64] #{uri} #{codename}-cdh4 contrib"
+  action :create
 end
+
+cached_keyfile = "#{Chef::Config[:file_cache_path]}/archive.key"
+remote_file cached_keyfile do
+  source "http://archive.cloudera.com/cdh4/#{platform}/#{codename}/amd64/cdh/archive.key"
+  mode 00644
+  action :create
+end
+
+execute "apt-key add #{cached_keyfile}" do
+  action :run
+end
+
+execute "apt-get update" do
+  action :run
+end
+
+include_recipe "java"
 
 package "hadoop"
 
