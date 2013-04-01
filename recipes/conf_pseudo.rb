@@ -23,11 +23,15 @@ include_recipe "hadoop"
 
 package "hadoop-0.20-conf-pseudo"
 
-hdfs = "hdfs"
+def run_as_hdfs(command, &block)
+  execute command do
+    action :run
+    user "hdfs"
+    instance_eval(&block) if block_given?
+  end
+end
 
-execute "hdfs namenode -format -nonInteractive" do
-  action :run
-  user hdfs
+run_as_hdfs "hdfs namenode -format -nonInteractive" do
   returns [0,1]
 end
 
@@ -49,14 +53,22 @@ commands = [
 ]
 
 commands.each do |command|
-  execute command do
-    action :run
-    user hdfs
-  end
+  run_as_hdfs command
 end
 
 %w{jobtracker tasktracker}.each do |d|
   service "hadoop-0.20-mapreduce-#{d}" do
     action [ :start, :enable ]
+  end
+end
+
+node[:hadoop][:users].each do |user|
+  home_dir = "/user/#{user}"
+  commands = [
+    "hadoop fs -mkdir -p #{home_dir}",
+    "hadoop fs -chown #{user} #{home_dir}"
+  ]
+  commands.each do |command|
+    run_as_hdfs command
   end
 end
