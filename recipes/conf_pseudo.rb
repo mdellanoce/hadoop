@@ -45,6 +45,7 @@ mapred_cache_dir = "/var/lib/hadoop-hdfs/cache/mapred"
 mapred_system_dir = "/tmp/mapred/system"
 commands = [
   "hadoop fs -mkdir -p /tmp",
+  "hadoop fs -chmod 0777 /tmp",
   "hadoop fs -mkdir -p #{mapred_cache_dir}/staging",
   "hadoop fs -chmod 1777 #{mapred_cache_dir}/staging",
   "hadoop fs -chown -R mapred #{mapred_cache_dir}",
